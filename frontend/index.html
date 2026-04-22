@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Smart Expense Splitter – Track and split shared expenses with your group in real time." />
+<title>SplitWise Pro – Smart Expense Splitter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ─── TOKENS ─────────────────────────────────────── */
+  :root {
+    --bg: #0d0f1a;
+    --surface: #161929;
+    --surface2: #1e2235;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --green: #22c55e;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --transition: 0.2s ease;
+    --glass: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.1);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCROLLBAR ──────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 99px; }
+
+  /* ─── LAYOUT ─────────────────────────────────────── */
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* ─── NAV ────────────────────────────────────────── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 64px;
+    background: rgba(13,15,26,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.2rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .nav-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
+  .ws-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.75rem; color: var(--muted);
+  }
+  .ws-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted); transition: background var(--transition);
+  }
+  .ws-dot.connected { background: var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+  }
+
+  /* ─── PAGE SYSTEM ────────────────────────────────── */
+  .page { display: none; flex: 1; }
+  .page.active { display: flex; flex-direction: column; }
+
+  /* ─── HOME PAGE ──────────────────────────────────── */
+  #page-home {
+    align-items: center; justify-content: center;
+    padding: 48px 16px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(108,99,255,0.15) 0%, transparent 70%);
+  }
+  .hero { text-align: center; max-width: 600px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 99px; padding: 4px 14px; font-size: 0.78rem;
+    color: var(--accent2); margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800; line-height: 1.1;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 16px;
+  }
+  .hero p { color: var(--muted); font-size: 1.05rem; line-height: 1.6; margin-bottom: 40px; }
+
+  .home-cards {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; max-width: 640px; width: 100%;
+    margin: 0 auto;
+  }
+  @media (max-width: 500px) { .home-cards { grid-template-columns: 1fr; } }
+
+  .home-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition);
+  }
+  .home-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(108,99,255,0.4);
+    box-shadow: 0 16px 48px rgba(108,99,255,0.15);
+  }
+  .home-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+  .home-card p { font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+
+  /* ─── INPUTS & BUTTONS ───────────────────────────── */
+  .input {
+    width: 100%; padding: 11px 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color var(--transition), box-shadow var(--transition);
+  }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,0.18); }
+  .input::placeholder { color: var(--muted); }
+
+  select.input { cursor: pointer; }
+  select.input option { background: var(--surface2); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 22px; border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; border: none; transition: all var(--transition);
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 4px 16px rgba(108,99,255,0.35);
+  }
+  .btn-primary:hover { background: #7b73ff; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,99,255,0.45); }
+  .btn-outline {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: rgba(108,99,255,0.08); }
+  .btn-danger { background: rgba(248,113,113,0.15); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+  .btn-danger:hover { background: rgba(248,113,113,0.25); }
+  .btn-sm { padding: 7px 14px; font-size: 0.8rem; }
+  .btn-icon { padding: 8px; border-radius: 8px; }
+  .btn-edit { background: rgba(167,139,250,0.12); color: var(--accent2); border: 1px solid rgba(167,139,250,0.25); }
+  .btn-edit:hover { background: rgba(167,139,250,0.22); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+  .btn-full { width: 100%; }
+
+  /* ─── GROUP DASHBOARD ────────────────────────────── */
+  #page-group { padding: 0; }
+
+  .group-header {
+    padding: 32px 32px 0;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .group-title { font-size: 1.6rem; font-weight: 800; }
+  .group-id-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 99px; padding: 4px 12px;
+    font-size: 0.72rem; color: var(--muted); cursor: pointer;
+    transition: border-color var(--transition);
+  }
+  .group-id-badge:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── TABS ───────────────────────────────────────── */
+  .tabs {
+    display: flex; gap: 4px;
+    padding: 24px 32px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 20px; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    color: var(--muted); border: none; background: transparent;
+    transition: color var(--transition), background var(--transition);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab.active { color: var(--accent); background: rgba(108,99,255,0.1); }
+  .tab:hover:not(.active) { color: var(--text); }
+  .tab-badge {
+    background: var(--accent); color: #fff;
+    border-radius: 99px; padding: 1px 7px; font-size: 0.7rem;
+  }
+
+  .tab-content { display: none; flex: 1; padding: 28px 32px; }
+  .tab-content.active { display: block; }
+
+  /* ─── MEMBERS PANEL ──────────────────────────────── */
+  .members-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .member-chip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+    transition: border-color var(--transition);
+  }
+  .member-chip:hover { border-color: rgba(108,99,255,0.3); }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .member-name { font-size: 0.9rem; font-weight: 600; }
+
+  .add-member-row {
+    display: flex; gap: 10px; align-items: center;
+    max-width: 480px;
+  }
+
+  /* ─── EXPENSES LIST ──────────────────────────────── */
+  .expense-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+  }
+  .expense-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .expense-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    display: grid; grid-template-columns: auto 1fr auto;
+    gap: 14px; align-items: center;
+    transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .expense-card:hover {
+    border-color: rgba(108,99,255,0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  .expense-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .expense-info { overflow: hidden; }
+  .expense-desc { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .expense-meta { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+  .expense-amount { text-align: right; }
+  .expense-amount .amount { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+  .expense-amount .paid-by { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .expense-actions { display: flex; gap: 6px; align-items: center; }
+
+  .category-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px; border-radius: 99px; font-size: 0.72rem; font-weight: 600;
+    text-transform: capitalize;
+  }
+
+  /* ─── BALANCES ───────────────────────────────────── */
+  .balances-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px; margin-bottom: 32px;
+  }
+  .balance-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px;
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    animation: slideIn 0.25s ease;
+  }
+  .balance-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .balance-card.positive { border-color: rgba(34,197,94,0.3); }
+  .balance-card.negative { border-color: rgba(248,113,113,0.3); }
+  .balance-card .bal-name { font-weight: 600; margin-bottom: 6px; }
+  .balance-card .bal-amount { font-size: 1.5rem; font-weight: 800; }
+  .balance-card .bal-label { font-size: 0.75rem; margin-top: 4px; }
+  .balance-card.positive .bal-amount { color: var(--green); }
+  .balance-card.negative .bal-amount { color: var(--red); }
+  .balance-card.zero .bal-amount { color: var(--muted); }
+
+  /* ─── SETTLEMENTS ────────────────────────────────── */
+  .settlement-section h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+  .settlement-list { display: flex; flex-direction: column; gap: 10px; }
+  .settlement-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 22px;
+    display: flex; align-items: center; gap: 16px;
+    animation: slideIn 0.25s ease;
+    transition: border-color var(--transition);
+  }
+  .settlement-item:hover { border-color: rgba(108,99,255,0.3); }
+  .s-name { font-weight: 600; font-size: 0.95rem; min-width: 100px; }
+  .s-arrow {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    color: var(--muted); font-size: 0.8rem;
+  }
+  .s-line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0.4; }
+  .s-amount { font-weight: 800; font-size: 1.1rem; color: var(--accent2); }
+  .s-pays { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .settled-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 99px; padding: 8px 18px; color: var(--green);
+    font-size: 0.85rem; font-weight: 600;
+  }
+
+  /* ─── ANALYTICS ──────────────────────────────────── */
+  .analytics-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px; margin-bottom: 28px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    transition: border-color var(--transition);
+  }
+  .stat-card:hover { border-color: rgba(108,99,255,0.3); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .stat-value { font-size: 1.5rem; font-weight: 800; }
+  .stat-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+  .chart-section h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; }
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; max-width: 540px; }
+  .bar-row { display: flex; align-items: center; gap: 12px; }
+  .bar-label { width: 110px; font-size: 0.82rem; text-transform: capitalize; color: var(--muted); flex-shrink: 0; }
+  .bar-wrap { flex: 1; background: var(--surface2); border-radius: 99px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.6s ease; }
+  .bar-val { font-size: 0.82rem; font-weight: 600; width: 60px; text-align: right; }
+
+  /* ─── MODAL ──────────────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px;
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+    transform: translateY(20px); transition: transform 0.2s ease;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 24px; }
+  .form-group { margin-bottom: 18px; }
+  .form-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 28px; }
+
+  /* ─── PARTICIPANTS EDITOR ────────────────────────── */
+  #participant-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .part-row { display: grid; gap: 8px; align-items: center; }
+  .part-row.equal { grid-template-columns: 1fr auto; }
+  .part-row.custom, .part-row.percentage { grid-template-columns: 1fr 120px; }
+  .part-name { font-size: 0.85rem; font-weight: 500; padding: 9px 12px; background: var(--surface2); border-radius: 8px; }
+  .part-check { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+  /* ─── TOASTS ─────────────────────────────────────── */
+  #toast-container {
+    position: fixed; bottom: 24px; right: 24px; z-index: 300;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 18px;
+    font-size: 0.85rem; font-weight: 500;
+    box-shadow: var(--shadow);
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 3s forwards;
+    display: flex; align-items: center; gap: 8px;
+    max-width: 320px;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+  .toast.success { border-color: rgba(34,197,94,0.3); }
+  .toast.error { border-color: rgba(248,113,113,0.3); }
+  .toast.info { border-color: rgba(108,99,255,0.3); }
+
+  /* ─── EMPTY STATE ────────────────────────────────── */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-state svg { width: 64px; height: 64px; opacity: 0.3; margin-bottom: 16px; }
+  .empty-state p { font-size: 0.95rem; }
+
+  /* ─── LOADER ─────────────────────────────────────── */
+  .loader {
+    display: inline-block; width: 20px; height: 20px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ─── RESPONSIVE ─────────────────────────────────── */
+  @media (max-width: 640px) {
+    nav { padding: 0 16px; }
+    .group-header, .tabs, .tab-content { padding-left: 16px; padding-right: 16px; }
+    .tabs { overflow-x: auto; white-space: nowrap; }
+    .form-row { grid-template-columns: 1fr; }
+    .modal { padding: 24px; }
+  }
+
+  /* ─── CATEGORY COLORS ────────────────────────────── */
+  .cat-food        { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .cat-travel      { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .cat-accommodation { background: rgba(167,139,250,0.15); color: #a78bfa; }
+  .cat-entertainment { background: rgba(236,72,153,0.15); color: #f472b6; }
+  .cat-utilities   { background: rgba(34,197,94,0.15); color: #4ade80; }
+  .cat-shopping    { background: rgba(249,115,22,0.15); color: #fb923c; }
+  .cat-other       { background: rgba(148,163,184,0.12); color: #94a3b8; }
+
+  .exp-icon-food        { background: rgba(251,191,36,0.12); }
+  .exp-icon-travel      { background: rgba(59,130,246,0.12); }
+  .exp-icon-accommodation { background: rgba(167,139,250,0.12); }
+  .exp-icon-entertainment { background: rgba(236,72,153,0.12); }
+  .exp-icon-utilities   { background: rgba(34,197,94,0.12); }
+  .exp-icon-shopping    { background: rgba(249,115,22,0.12); }
+  .exp-icon-other       { background: rgba(148,163,184,0.08); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="15" stroke="url(#ng)" stroke-width="2"/>
+        <path d="M10 16h12M16 10v12" stroke="url(#ng)" stroke-width="2.5" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="ng" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#6c63ff"/><stop offset="1" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      SplitWise Pro
+    </div>
+    <div class="ws-indicator">
+      <div class="ws-dot" id="ws-dot"></div>
+      <span id="ws-label">offline</span>
+    </div>
+  </nav>
+
+  <!-- ── HOME PAGE ── -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <div class="hero-badge">✨ Real-time expense splitting</div>
+      <h1>Split expenses,<br/>not friendships.</h1>
+      <p>Create a group, add expenses, and settle up instantly.<br/>No sign-up required — just share the link.</p>
+    </div>
+    <div class="home-cards">
+      <div class="home-card">
+        <h3>🚀 Create a Group</h3>
+        <p>Start a new expense group and invite your friends.</p>
+        <div class="form-group">
+          <input class="input" id="new-group-name" placeholder="Group name (e.g., Goa Trip)" />
+        </div>
+        <div class="form-group">
+          <input class="input" id="new-user-name" placeholder="Your name" />
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-create-group">Create Group</button>
+      </div>
+      <div class="home-card">
+        <h3>🔗 Join a Group</h3>
+        <p>Have a group ID? Enter it below to join.</p>
+        <div class="form-group">
+          <input class="input" id="join-group-id" placeholder="Paste group ID…" />
+        </div>
+        <div class="form-group">
+          <input class="input" id="join-user-name" placeholder="Your name" />
+        </div>
+        <button class="btn btn-outline btn-full" id="btn-join-group">Join Group</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROUP PAGE ── -->
+  <div class="page" id="page-group">
+    <div class="group-header">
+      <div>
+        <div class="group-title" id="group-title">Loading…</div>
+        <div class="group-id-badge" id="group-id-badge" onclick="copyGroupId()" title="Click to copy">
+          🔗 <span id="group-id-display"></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="showHome()">← Back</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="members" onclick="switchTab('members', this)">👥 Members <span class="tab-badge" id="members-count">0</span></button>
+      <button class="tab" data-tab="expenses" onclick="switchTab('expenses', this)">💸 Expenses <span class="tab-badge" id="expenses-count">0</span></button>
+      <button class="tab" data-tab="balances" onclick="switchTab('balances', this)">⚖️ Balances</button>
+      <button class="tab" data-tab="settle" onclick="switchTab('settle', this)">✅ Settle Up</button>
+      <button class="tab" data-tab="analytics" onclick="switchTab('analytics', this)">📊 Analytics</button>
+    </div>
+
+    <!-- Members Tab -->
+    <div class="tab-content active" id="tab-members">
+      <div class="members-grid" id="members-grid"></div>
+      <div class="add-member-row">
+        <input class="input" id="new-member-name" placeholder="Add member by name…" />
+        <button class="btn btn-primary" id="btn-add-member">Add</button>
+      </div>
+    </div>
+
+    <!-- Expenses Tab -->
+    <div class="tab-content" id="tab-expenses">
+      <div class="expense-controls">
+        <span id="expenses-total-label" style="font-size:0.85rem;color:var(--muted);"></span>
+        <button class="btn btn-primary" id="btn-add-expense">+ Add Expense</button>
+      </div>
+      <div class="expense-list" id="expense-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2"/><path d="M24 32h16M32 24v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <p>No expenses yet. Add one!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Balances Tab -->
+    <div class="tab-content" id="tab-balances">
+      <div class="balances-grid" id="balances-grid"></div>
+    </div>
+
+    <!-- Settle Tab -->
+    <div class="tab-content" id="tab-settle">
+      <div class="settlement-section">
+        <h3>Minimal settlement plan</h3>
+        <div class="settlement-list" id="settlement-list"></div>
+      </div>
+    </div>
+
+    <!-- Analytics Tab -->
+    <div class="tab-content" id="tab-analytics">
+      <div class="analytics-grid" id="analytics-stats"></div>
+      <div class="chart-section">
+        <h3>Spending by Category</h3>
+        <div class="bar-chart" id="category-chart"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD / EDIT EXPENSE MODAL ── -->
+<div class="modal-overlay" id="expense-modal">
+  <div class="modal">
+    <h2 id="modal-title">💸 Add Expense</h2>
+    <!-- Edit mode banner -->
+    <div id="edit-mode-banner" style="display:none;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:9px 14px;margin-bottom:18px;font-size:0.82rem;color:#fbbf24;display:none;align-items:center;gap:8px;">
+      ✏️ You are editing an existing expense. Changes will update balances.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Description</label>
+      <input class="input" id="exp-desc" placeholder="e.g., Dinner at Barbeque Nation" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Amount (₹)</label>
+        <input class="input" id="exp-amount" type="number" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Paid by</label>
+        <select class="input" id="exp-paid-by"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Split type</label>
+        <select class="input" id="exp-split-type" onchange="renderParticipants()">
+          <option value="equal">Equal</option>
+          <option value="custom">Custom Amount</option>
+          <option value="percentage">Percentage</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Category (auto)</label>
+        <select class="input" id="exp-category">
+          <option value="">Auto-detect</option>
+          <option value="food">🍕 Food</option>
+          <option value="travel">✈️ Travel</option>
+          <option value="accommodation">🏨 Accommodation</option>
+          <option value="entertainment">🎬 Entertainment</option>
+          <option value="utilities">💡 Utilities</option>
+          <option value="shopping">🛍️ Shopping</option>
+          <option value="other">📌 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Participants</label>
+      <div id="participant-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-full" id="btn-submit-expense">Add Expense</button>
+      <button class="btn btn-outline" onclick="closeExpenseModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOASTS -->
+<div id="toast-container"></div>
+
+<script>
+// ─── STATE ─────────────────────────────────────────────────────────────────
+const API = 'http://localhost:8000/api';
+const WS_BASE = 'ws://localhost:8000/ws';
+
+let state = {
+  userId: null,
+  userName: null,
+  groupId: null,
+  groupName: null,
+  members: [],
+  expenses: [],
+  balances: [],
+  settlements: [],
+  analytics: null,
+  ws: null,
+  // Edit mode
+  editingExpenseId: null,
+};
+
+// ─── UTILS ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  el.innerHTML = `<span>${icons[type] || '💬'}</span> <span>${msg}</span>`;
+  $('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3800);
+}
+
+async function api(method, path, body) {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `HTTP ${res.status}`);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  } catch (e) {
+    toast(e.message, 'error');
+    throw e;
+  }
+}
+
+function fmtCurrency(n) {
+  return '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+}
+
+const CATEGORY_ICONS = {
+  food: '🍕', travel: '✈️', accommodation: '🏨',
+  entertainment: '🎬', utilities: '💡', shopping: '🛍️', other: '📌'
+};
+
+// ─── PAGE NAVIGATION ───────────────────────────────────────────────────────
+function showHome() {
+  $('page-home').classList.add('active');
+  $('page-group').classList.remove('active');
+  if (state.ws) { state.ws.close(); state.ws = null; }
+  setWsStatus(false);
+}
+
+function showGroup() {
+  $('page-home').classList.remove('active');
+  $('page-group').classList.add('active');
+}
+
+function switchTab(tabName, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  $(`tab-${tabName}`).classList.add('active');
+
+  // Lazy load
+  if (tabName === 'balances') loadBalances();
+  if (tabName === 'settle') loadSettlements();
+  if (tabName === 'analytics') loadAnalytics();
+}
+
+// ─── WEBSOCKET ─────────────────────────────────────────────────────────────
+function connectWs(groupId) {
+  if (state.ws) state.ws.close();
+  const ws = new WebSocket(`${WS_BASE}/${groupId}`);
+  state.ws = ws;
+
+  ws.onopen = () => setWsStatus(true);
+  ws.onclose = () => {
+    setWsStatus(false);
+    // Reconnect after 3s
+    setTimeout(() => { if (state.groupId) connectWs(state.groupId); }, 3000);
+  };
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.event === 'expense_added' || data.event === 'expense_deleted' || data.event === 'expense_updated') {
+      loadExpenses();
+      toast(`${data.event === 'expense_added' ? '💸 New expense added' : data.event === 'expense_updated' ? '✏️ Expense updated' : '🗑️ Expense removed'} by someone!`, 'info');
+    }
+  };
+}
+
+function setWsStatus(connected) {
+  const dot = $('ws-dot');
+  const lbl = $('ws-label');
+  if (connected) { dot.classList.add('connected'); lbl.textContent = 'live'; }
+  else { dot.classList.remove('connected'); lbl.textContent = 'offline'; }
+}
+
+// ─── AUTH / USER ───────────────────────────────────────────────────────────
+async function getOrCreateUser(name) {
+  const user = await api('POST', '/users', { name });
+  return user;
+}
+
+// ─── CREATE GROUP ──────────────────────────────────────────────────────────
+$('btn-create-group').addEventListener('click', async () => {
+  const groupName = $('new-group-name').value.trim();
+  const userName = $('new-user-name').value.trim();
+  if (!groupName || !userName) { toast('Enter group name and your name', 'error'); return; }
+
+  const btn = $('btn-create-group');
+  btn.disabled = true; btn.innerHTML = '<div class="loader"></div>';
+  try {
+    const user = await getOrCreateUser(userName);
+    const group = await api('POST', '/groups', { name: groupName, created_by: user.id });
+    state.userId = user.id;
+    state.userName = user.name;
+    state.groupId = group.id;
+    state.groupName = group.name;
+    await initGroupPage();
+    toast('Group created! 🎉 Share the ID to invite others.', 'success');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Group';
+  }
+});
+
+// ─── JOIN GROUP ────────────────────────────────────────────────────────────
+$('btn-join-group').addEventListener('click', async () => {
+  const groupId = $('join-group-id').value.trim();
+  const userName = $('join-user-name').value.trim();
+  if (!groupId || !userName) { toast('Enter group ID and your name', 'error'); return; }
+
+  const btn = $('btn-join-group');
+  btn.disabled = true; btn.innerHTML = '<div class="loader"></div>';
+  try {
+    const user = await getOrCreateUser(userName);
+    // Add as member
+    await api('POST', `/groups/${groupId}/members`, { user_id: user.id }).catch(() => {});
+    const group = await api('GET', `/groups/${groupId}`);
+    state.userId = user.id;
+    state.userName = user.name;
+    state.groupId = group.id;
+    state.groupName = group.name;
+    await initGroupPage();
+    toast(`Joined "${group.name}"! 👋`, 'success');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Join Group';
+  }
+});
+
+// ─── INIT GROUP PAGE ────────────────────────────────────────────────────────
+async function initGroupPage() {
+  $('group-title').textContent = state.groupName;
+  $('group-id-display').textContent = state.groupId;
+  showGroup();
+  switchTab('members', document.querySelector('.tab[data-tab="members"]'));
+  await Promise.all([loadMembers(), loadExpenses()]);
+  connectWs(state.groupId);
+}
+
+function copyGroupId() {
+  navigator.clipboard.writeText(state.groupId).then(() => toast('Group ID copied!', 'success'));
+}
+
+// ─── MEMBERS ───────────────────────────────────────────────────────────────
+async function loadMembers() {
+  const members = await api('GET', `/groups/${state.groupId}/members`);
+  state.members = members || [];
+  renderMembers();
+  renderPaidBySelect();
+  renderParticipants();
+}
+
+function renderMembers() {
+  const grid = $('members-grid');
+  $('members-count').textContent = state.members.length;
+  grid.innerHTML = state.members.map(m => `
+    <div class="member-chip">
+      <div class="avatar">${initials(m.name)}</div>
+      <div class="member-name">${m.name}</div>
+    </div>
+  `).join('');
+}
+
+$('btn-add-member').addEventListener('click', async () => {
+  const name = $('new-member-name').value.trim();
+  if (!name) return;
+  try {
+    const user = await getOrCreateUser(name);
+    await api('POST', `/groups/${state.groupId}/members`, { user_id: user.id });
+    $('new-member-name').value = '';
+    await loadMembers();
+    toast(`${name} added to group!`, 'success');
+  } catch(e) {}
+});
+
+// ─── EXPENSES ──────────────────────────────────────────────────────────────
+async function loadExpenses() {
+  const expenses = await api('GET', `/groups/${state.groupId}/expenses`);
+  state.expenses = expenses || [];
+  renderExpenses();
+}
+
+function renderExpenses() {
+  const list = $('expense-list');
+  $('expenses-count').textContent = state.expenses.length;
+  const total = state.expenses.reduce((s, e) => s + e.amount, 0);
+  $('expenses-total-label').textContent = `Total: ${fmtCurrency(total)}`;
+
+  if (state.expenses.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="2"/><path d="M24 32h16M32 24v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <p>No expenses yet. Add one!</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = state.expenses.map(e => {
+    const cat = e.category || 'other';
+    const icon = CATEGORY_ICONS[cat] || '📌';
+    return `
+    <div class="expense-card" id="exp-${e.id}">
+      <div class="expense-icon exp-icon-${cat}">${icon}</div>
+      <div class="expense-info">
+        <div class="expense-desc">${escHtml(e.description)}</div>
+        <div class="expense-meta">
+          <span class="category-badge cat-${cat}">${icon} ${cat}</span>
+          &nbsp;•&nbsp; ${fmtDate(e.created_at)}
+          &nbsp;•&nbsp; Split: ${e.split_type}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div class="expense-amount">
+          <div class="amount">${fmtCurrency(e.amount)}</div>
+          <div class="paid-by">paid by ${escHtml(e.payer_name)}</div>
+        </div>
+        <div class="expense-actions">
+          <button class="btn btn-edit btn-sm btn-icon" onclick="openEditModal('${e.id}')" title="Edit">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="deleteExpense('${e.id}')" title="Delete">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  await api('DELETE', `/expenses/${id}`);
+  await loadExpenses();
+  toast('Expense deleted', 'success');
+}
+
+function escHtml(s) {
+  return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+}
+
+// ─── ADD EXPENSE MODAL ──────────────────────────────────────────────────────
+$('btn-add-expense').addEventListener('click', openExpenseModal);
+
+function openExpenseModal() {
+  renderPaidBySelect();
+  renderParticipants();
+  $('expense-modal').classList.add('open');
+}
+
+function closeExpenseModal() {
+  $('expense-modal').classList.remove('open');
+  $('exp-desc').value = '';
+  $('exp-amount').value = '';
+  $('exp-category').value = '';
+  $('exp-split-type').value = 'equal';
+  renderParticipants();
+}
+
+$('expense-modal').addEventListener('click', e => {
+  if (e.target === $('expense-modal')) closeExpenseModal();
+});
+
+function renderPaidBySelect() {
+  const sel = $('exp-paid-by');
+  sel.innerHTML = state.members.map(m =>
+    `<option value="${m.user_id}">${m.name}</option>`
+  ).join('');
+  // Default to current user
+  if (state.userId) sel.value = state.userId;
+}
+
+function renderParticipants() {
+  const splitType = $('exp-split-type').value;
+  const list = $('participant-list');
+  list.innerHTML = state.members.map(m => {
+    if (splitType === 'equal') {
+      return `<div class="part-row equal">
+        <div class="part-name">${escHtml(m.name)}</div>
+        <input type="checkbox" class="part-check" id="part-${m.user_id}" value="${m.user_id}" checked />
+      </div>`;
+    } else if (splitType === 'custom') {
+      return `<div class="part-row custom">
+        <div class="part-name">${escHtml(m.name)}</div>
+        <input class="input" type="number" min="0" step="0.01" id="part-${m.user_id}" data-uid="${m.user_id}" placeholder="₹0" />
+      </div>`;
+    } else {
+      return `<div class="part-row percentage">
+        <div class="part-name">${escHtml(m.name)}</div>
+        <input class="input" type="number" min="0" max="100" step="1" id="part-${m.user_id}" data-uid="${m.user_id}" placeholder="%" />
+      </div>`;
+    }
+  }).join('');
+}
+
+$('btn-submit-expense').addEventListener('click', async () => {
+  const description = $('exp-desc').value.trim();
+  const amount = parseFloat($('exp-amount').value);
+  const paid_by = $('exp-paid-by').value;
+  const split_type = $('exp-split-type').value;
+  const category = $('exp-category').value || undefined;
+
+  if (!description || !amount || !paid_by) {
+    toast('Fill in description, amount, and payer', 'error'); return;
+  }
+
+  let participants = [];
+  if (split_type === 'equal') {
+    participants = state.members
+      .filter(m => document.getElementById(`part-${m.user_id}`)?.checked)
+      .map(m => ({ user_id: m.user_id }));
+    if (participants.length === 0) { toast('Select at least one participant', 'error'); return; }
+  } else if (split_type === 'custom') {
+    participants = state.members
+      .map(m => ({ user_id: m.user_id, amount: parseFloat(document.getElementById(`part-${m.user_id}`)?.value || 0) }))
+      .filter(p => p.amount > 0);
+  } else {
+    participants = state.members
+      .map(m => ({ user_id: m.user_id, percentage: parseFloat(document.getElementById(`part-${m.user_id}`)?.value || 0) }))
+      .filter(p => p.percentage > 0);
+  }
+
+  if (participants.length === 0) { toast('Add at least one participant', 'error'); return; }
+
+  const btn = $('btn-submit-expense');
+  btn.disabled = true; btn.innerHTML = '<div class="loader"></div> Adding…';
+
+  try {
+    await api('POST', '/expenses', {
+      group_id: state.groupId,
+      description, amount, paid_by, split_type, participants, category
+    });
+    closeExpenseModal();
+    await loadExpenses();
+    toast('Expense added! 💸', 'success');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Add Expense';
+  }
+});
+
+// ─── BALANCES ──────────────────────────────────────────────────────────────
+async function loadBalances() {
+  const balances = await api('GET', `/groups/${state.groupId}/balances`);
+  state.balances = balances || [];
+  renderBalances();
+}
+
+function renderBalances() {
+  const grid = $('balances-grid');
+  if (!state.balances.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><p>No balance data yet.</p></div>`;
+    return;
+  }
+  grid.innerHTML = state.balances.map(b => {
+    const cls = b.balance > 0.01 ? 'positive' : b.balance < -0.01 ? 'negative' : 'zero';
+    const label = b.balance > 0.01 ? 'is owed' : b.balance < -0.01 ? 'owes' : 'settled up';
+    return `<div class="balance-card ${cls}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div class="avatar">${initials(b.name)}</div>
+        <div class="bal-name">${escHtml(b.name)}</div>
+      </div>
+      <div class="bal-amount">${fmtCurrency(b.balance)}</div>
+      <div class="bal-label">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── SETTLEMENTS ────────────────────────────────────────────────────────────
+async function loadSettlements() {
+  const settlements = await api('GET', `/groups/${state.groupId}/settlements`);
+  state.settlements = settlements || [];
+  renderSettlements();
+}
+
+function renderSettlements() {
+  const list = $('settlement-list');
+  if (!state.settlements.length) {
+    list.innerHTML = `<div class="settled-badge">✅ All settled up! Nothing to pay.</div>`;
+    return;
+  }
+  list.innerHTML = state.settlements.map(s => `
+    <div class="settlement-item">
+      <div>
+        <div class="s-name">${escHtml(s.from_name)}</div>
+        <div class="s-pays">pays</div>
+      </div>
+      <div class="s-arrow">
+        <div class="s-line"></div>
+        <div class="s-amount">${fmtCurrency(s.amount)}</div>
+        <div class="s-line"></div>
+        →
+      </div>
+      <div>
+        <div class="s-name" style="text-align:right;">${escHtml(s.to_name)}</div>
+        <div class="s-pays" style="text-align:right;">receives</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─── ANALYTICS ─────────────────────────────────────────────────────────────
+async function loadAnalytics() {
+  const data = await api('GET', `/analytics/groups/${state.groupId}`);
+  state.analytics = data;
+  renderAnalytics(data);
+}
+
+function renderAnalytics(d) {
+  const stats = $('analytics-stats');
+  stats.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value">${fmtCurrency(d.total_spending)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Expenses</div>
+      <div class="stat-value">${d.expense_count}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Members</div>
+      <div class="stat-value">${d.member_count}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg / Person</div>
+      <div class="stat-value">${fmtCurrency(d.avg_per_person)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Top Category</div>
+      <div class="stat-value" style="font-size:1.2rem;">${CATEGORY_ICONS[d.top_category] || '📌'} ${d.top_category}</div>
+    </div>
+  `;
+
+  const chart = $('category-chart');
+  const cats = Object.entries(d.by_category);
+  const max = Math.max(...cats.map(c => c[1]), 1);
+  chart.innerHTML = cats.length ? cats.map(([cat, amt]) => `
+    <div class="bar-row">
+      <div class="bar-label">${CATEGORY_ICONS[cat] || '📌'} ${cat}</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${(amt/max*100).toFixed(1)}%"></div></div>
+      <div class="bar-val">${fmtCurrency(amt)}</div>
+    </div>
+  `).join('') : '<div style="color:var(--muted);font-size:0.85rem;">No data yet.</div>';
+}
+
+// ─── INIT ───────────────────────────────────────────────────────────────────
+// Check URL params for group share link
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('group')) {
+    $('join-group-id').value = params.get('group');
+    toast('Group ID pre-filled from link!', 'info');
+  }
+})();
+</script>
+</body>
+</html>
