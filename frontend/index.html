@@ -624,8 +624,11 @@
 
 <script>
 // ─── STATE ─────────────────────────────────────────────────────────────────
-const API = 'http://localhost:8000/api';
-const WS_BASE = 'ws://localhost:8000/ws';
+// 🔧 PRODUCTION: Replace the values below with your deployed backend URL
+// e.g. const BACKEND = 'https://your-app.onrender.com';
+const BACKEND = window.BACKEND_URL || 'http://localhost:8000';
+const API = `${BACKEND}/api`;
+const WS_BASE = BACKEND.replace(/^http/, 'ws') + '/ws';
 
 let state = {
   userId: null,

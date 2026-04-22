@@ -1,0 +1,10 @@
+[build]
+  publish = "frontend"
+
+# No build command needed - it's a plain HTML file
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
