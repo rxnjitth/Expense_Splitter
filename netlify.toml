@@ -1,5 +1,5 @@
 [build]
-  publish = "frontend"
+  publish = "."
 
 # No build command needed - it's a plain HTML file
 
