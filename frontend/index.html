@@ -180,6 +180,7 @@
     transition: border-color var(--transition);
   }
   .group-id-badge:hover { border-color: var(--accent); color: var(--accent); }
+  .group-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
   /* ─── TABS ───────────────────────────────────────── */
   .tabs {
@@ -266,6 +267,7 @@
   .expense-amount .amount { font-size: 1.15rem; font-weight: 700; color: var(--text); }
   .expense-amount .paid-by { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
   .expense-actions { display: flex; gap: 6px; align-items: center; }
+  .expense-trailing { display: flex; align-items: center; gap: 14px; }
 
   .category-badge {
     display: inline-flex; align-items: center; gap: 4px;
@@ -415,9 +417,66 @@
   @media (max-width: 640px) {
     nav { padding: 0 16px; }
     .group-header, .tabs, .tab-content { padding-left: 16px; padding-right: 16px; }
-    .tabs { overflow-x: auto; white-space: nowrap; }
+    .group-header { padding-top: 20px; }
+    .group-title { font-size: 1.3rem; }
+    .tabs {
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: 0 0 auto; }
     .form-row { grid-template-columns: 1fr; }
     .modal { padding: 24px; }
+    .modal-actions { flex-direction: column; }
+    .modal-actions .btn { width: 100%; }
+    .add-member-row { flex-direction: column; max-width: none; }
+    .add-member-row .btn { width: 100%; }
+    .expense-card {
+      grid-template-columns: 40px 1fr;
+      gap: 10px;
+      padding: 14px;
+    }
+    .expense-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.1rem;
+    }
+    .expense-trailing {
+      grid-column: 1 / -1;
+      justify-content: space-between;
+      width: 100%;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border);
+    }
+    .expense-amount .amount { font-size: 1rem; }
+    .expense-amount .paid-by { font-size: 0.72rem; }
+    .settlement-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 16px;
+    }
+    .s-arrow { width: 100%; }
+    .s-name { min-width: 0; }
+    #toast-container {
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+    }
+    .toast { max-width: none; }
+  }
+
+  @media (max-width: 420px) {
+    .hero h1 { font-size: clamp(1.65rem, 8vw, 2.1rem); }
+    .hero p { font-size: 0.95rem; }
+    .home-card { padding: 20px; }
+    .members-grid { grid-template-columns: 1fr; }
+    .balances-grid, .analytics-grid { grid-template-columns: 1fr; }
+    .bar-row { gap: 8px; }
+    .bar-label { width: 92px; font-size: 0.76rem; }
+    .bar-val { width: 52px; font-size: 0.76rem; }
   }
 
   /* ─── CATEGORY COLORS ────────────────────────────── */
@@ -503,7 +562,7 @@
           🔗 <span id="group-id-display"></span>
         </div>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="group-actions">
         <button class="btn btn-outline btn-sm" onclick="showHome()">← Back</button>
       </div>
     </div>
@@ -881,7 +940,7 @@ function renderExpenses() {
           &nbsp;•&nbsp; Split: ${e.split_type}
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:14px;">
+      <div class="expense-trailing">
         <div class="expense-amount">
           <div class="amount">${fmtCurrency(e.amount)}</div>
           <div class="paid-by">paid by ${escHtml(e.payer_name)}</div>
