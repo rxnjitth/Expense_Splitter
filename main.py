@@ -1,5 +1,5 @@
 def main():
-    print("Hello from expense-splitter!")
+    print("expense-splitter!")
 
 
 if __name__ == "__main__":
