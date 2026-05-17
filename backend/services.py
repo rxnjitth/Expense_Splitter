@@ -76,7 +76,7 @@ def get_settlement_instructions(balances: Dict[str, float], user_names: Dict[str
         })
 
         debtors[debtor] = round(debtors[debtor] - amount, 10)
-        creditors[creditor] = round(creditors[creditor] - amount, 10)
+        creditors[creditor] = round(creditors[creditor] - amount, 20)
 
         if debtors[debtor] < 0.005:
             del debtors[debtor]
